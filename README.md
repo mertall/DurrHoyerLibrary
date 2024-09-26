@@ -1,5 +1,5 @@
 # DurrHoyerLibrary
-## DurrHoyerAlgorithm Results on Microsoft Quantum Simulator
+## Microsoft Quantum Simulator Results
 | List     | Probability (Min) | List     | Probability (Max) |
 |-----------------------|------------------:|---------------------|------------------:|
 | [5, 3, 1, 2, 4]       |           51.9%   | [7, 5, 6, 1, 2]     |          99.8%    |
@@ -10,7 +10,7 @@
 | [7, 5, 6, 0, 2]       |           50.4%   |                     |                   |
 
 
-## DurrHoyerAlgorithm Results on Quantum Computer
+## Quantum Computer Results
 In progress
 ## Action Items
 
