@@ -7,3 +7,7 @@
 - [ ] Oracle and Unit Test for finding Median
 - [ ] Oracle and Unit Test for finding Range
 - [ ] Implement [QMSA](https://arxiv.org/pdf/1908.07943)
+
+## Start venv
+
+`source durrhoyer/bin/activate`
