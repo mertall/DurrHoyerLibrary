@@ -1,18 +1,4 @@
 # DurrHoyerLibrary
-
-## Action Items
-
-- [x] Unit Test for finding Min
-- [x] Unit Test for finding Max
-- [ ] DurrHoyerAlgorithm Results on Quantum Computer
-- [ ] Oracle and Unit Test for finding Median
-- [ ] Oracle and Unit Test for finding Range
-- [ ] Implement [QMSA](https://arxiv.org/pdf/1908.07943)
-
-## Start venv
-
-`source durrhoyer/bin/activate`
-
 ## DurrHoyerAlgorithm Results on Microsoft Quantum Simulator
 | List            | Probability for Finding Minimum |
 |-----------------|-----------------|
@@ -31,3 +17,17 @@
 
 ## DurrHoyerAlgorithm Results on Quantum Computer
 In progress
+## Action Items
+
+- [x] Unit Test for finding Min
+- [x] Unit Test for finding Max
+- [ ] DurrHoyerAlgorithm Results on Quantum Computer
+- [ ] Oracle and Unit Test for finding Median
+- [ ] Oracle and Unit Test for finding Range
+- [ ] Implement [QMSA](https://arxiv.org/pdf/1908.07943)
+
+## Start venv
+
+`source durrhoyer/bin/activate`
+
+
