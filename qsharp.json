@@ -1,13 +1,4 @@
 {
 "author": "Mridul Sarkar",
-"license": "MIT",
-"dependencies": {
-    "SomeDependency": {
-      "github": {
-        "owner": "Microsoft",
-        "repo": "qsharp",
-        "ref": "main"
-      }
-    }
-  }
+"license": "MIT"
 }
