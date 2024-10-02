@@ -159,4 +159,4 @@ def run_shots(shots=10):
 
 if __name__ == "__main__":
     # Run 100 shots and calculate the average success rates
-    run_shots(shots=100)
+    run_shots(shots=10)

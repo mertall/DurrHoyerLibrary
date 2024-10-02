@@ -35,12 +35,12 @@ class QuantumBackendDH():
         for x in MyTargets:
             print(x)
         qsharp.init(project_root = '../DurrHoyerLibrary/', target_profile=qsharp.TargetProfile.Base)
-        MyProgram = qsharp.compile("durrhoyerAlgorithm.DurrHoyerAlgorithm("+inputs+")")
+        MyProgram = qsharp.compile("durrhoyerAlgorithm.DurrHoyerAlgorithmProduction("+inputs+")")
 
 
         MyTarget = self.workspace.get_targets("ionq.qpu.aria-1")
 
         job = MyTarget.submit(MyProgram, "MyPythonJob", shots=1)
-        results = job.get_results())
+        results = job.get_results(timeout_secs=3600)
         print("\nResults: ", results)
         return results

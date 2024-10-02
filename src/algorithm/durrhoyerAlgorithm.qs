@@ -115,94 +115,94 @@ namespace durrhoyerAlgorithm {
         OracleMoreThan(threshold, inputQubits, auxQubit);
         DiffusionOperator(inputQubits);
     }
-    operation DurrHoyerAlgorithmSimulation(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
-        mutable candidate = candidate;  // Random initial candidate
+    // operation DurrHoyerAlgorithmSimulation(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
+    //     mutable candidate = candidate;  // Random initial candidate
 
-        use inputQubits = Qubit[nQubits] {
-            use auxQubit = Qubit() {
-                // Create a superposition of all states
-                ApplyToEach(H, inputQubits);
+    //     use inputQubits = Qubit[nQubits] {
+    //         use auxQubit = Qubit() {
+    //             // Create a superposition of all states
+    //             ApplyToEach(H, inputQubits);
 
-                // Continue Grover search until no better candidate is found
-                mutable betterCandidateFound = true;
-                mutable iterationCount = 1; // Track the iteration count manually
-                mutable optimalIterations = 5;
-                mutable validIterations = 0;
+    //             // Continue Grover search until no better candidate is found
+    //             mutable betterCandidateFound = true;
+    //             mutable iterationCount = 1; // Track the iteration count manually
+    //             mutable optimalIterations = 5;
+    //             mutable validIterations = 0;
 
-                while (validIterations < optimalIterations) {
-                    set betterCandidateFound = false;
-                    let threshold = list[candidate];
+    //             while (validIterations < optimalIterations) {
+    //                 set betterCandidateFound = false;
+    //                 let threshold = list[candidate];
 
-                    // Define the comparison function based on the type
-                    let comparison = type == "min" ? (x -> x < threshold) | (x -> x > threshold);
+    //                 // Define the comparison function based on the type
+    //                 let comparison = type == "min" ? (x -> x < threshold) | (x -> x > threshold);
 
-                    // Calculate M: the number of elements smaller than the current candidate (for min)
-                    let M = CountElements(list, comparison);
+    //                 // Calculate M: the number of elements smaller than the current candidate (for min)
+    //                 let M = CountElements(list, comparison);
 
-                    // If there are no more elements smaller/larger, return the candidate
-                    if (M == 0) {
-                        Message("No more elements to compare, search complete.");
-                        ResetAll(inputQubits + [auxQubit]);  // Ensure qubits are reset before returning
-                        return candidate;
-                    }
+    //                 // If there are no more elements smaller/larger, return the candidate
+    //                 if (M == 0) {
+    //                     Message("No more elements to compare, search complete.");
+    //                     ResetAll(inputQubits + [auxQubit]);  // Ensure qubits are reset before returning
+    //                     return candidate;
+    //                 }
 
-                    // Calculate the optimal number of Grover iterations
-                    let N = Length(list);
-                    let optimalIterations = Round((PI() / 4.0) * Sqrt(IntAsDouble(N) / IntAsDouble(M)));
+    //                 // Calculate the optimal number of Grover iterations
+    //                 let N = Length(list);
+    //                 let optimalIterations = Round((PI() / 4.0) * Sqrt(IntAsDouble(N) / IntAsDouble(M)));
 
-                    // Perform Grover iterations for min or max
-                    for i in 1..optimalIterations {
-                        let groverIteration = (type=="min") ? GroverIterationMin | GroverIterationMax;
-                        groverIteration(list[candidate], inputQubits, auxQubit);
+    //                 // Perform Grover iterations for min or max
+    //                 for i in 1..optimalIterations {
+    //                     let groverIteration = (type=="min") ? GroverIterationMin | GroverIterationMax;
+    //                     groverIteration(list[candidate], inputQubits, auxQubit);
 
-                        // Measure qubits and convert to an integer index
-                        mutable results = [];
-                        for qubit in inputQubits {
-                            let result = Measure([PauliZ], [qubit]);
-                            set results += [result];
+    //                     // Measure qubits and convert to an integer index
+    //                     mutable results = [];
+    //                     for qubit in inputQubits {
+    //                         let result = Measure([PauliZ], [qubit]);
+    //                         set results += [result];
 
-                            // Reset qubit if it is in the |1⟩ state
-                            if (result == One) {
-                                X(qubit);
-                            }
-                        }
+    //                         // Reset qubit if it is in the |1⟩ state
+    //                         if (result == One) {
+    //                             X(qubit);
+    //                         }
+    //                     }
 
-                        let candidateIndex = ResultArrayAsInt(results);
+    //                     let candidateIndex = ResultArrayAsInt(results);
 
-                        // Check if the new candidate is valid and within bounds
-                        if (candidateIndex >= 0 and candidateIndex < listSize) {
-                            let candidateValue = list[candidateIndex];
+    //                     // Check if the new candidate is valid and within bounds
+    //                     if (candidateIndex >= 0 and candidateIndex < listSize) {
+    //                         let candidateValue = list[candidateIndex];
 
-                            // Update the candidate if a better one is found
-                            if (type == "min" and candidateValue < list[candidate]) {
-                                OracleLessThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
-                                set candidate = candidateIndex;
-                                set betterCandidateFound = true;
-                            } elif (type == "max" and candidateValue > list[candidate]) {
-                                OracleMoreThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
-                                set candidate = candidateIndex;
-                                set betterCandidateFound = true;
-                            }
-                            set validIterations += 1;
+    //                         // Update the candidate if a better one is found
+    //                         if (type == "min" and candidateValue < list[candidate]) {
+    //                             OracleLessThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
+    //                             set candidate = candidateIndex;
+    //                             set betterCandidateFound = true;
+    //                         } elif (type == "max" and candidateValue > list[candidate]) {
+    //                             OracleMoreThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
+    //                             set candidate = candidateIndex;
+    //                             set betterCandidateFound = true;
+    //                         }
+    //                         set validIterations += 1;
 
-                            // Output intermediate results for debugging
-                            Message($"Iteration {validIterations}: Measured index = {candidateIndex}, Value = {candidateValue}");
-                        }
-                        // Reset all qubits to |0⟩ before returning
-                        ResetAll(inputQubits + [auxQubit]);
+    //                         // Output intermediate results for debugging
+    //                         Message($"Iteration {validIterations}: Measured index = {candidateIndex}, Value = {candidateValue}");
+    //                     }
+    //                     // Reset all qubits to |0⟩ before returning
+    //                     ResetAll(inputQubits + [auxQubit]);
 
-                    }
+    //                 }
 
-                }
+    //             }
 
-                // Reset all qubits to |0⟩ before returning
-                ResetAll(inputQubits + [auxQubit]);
+    //             // Reset all qubits to |0⟩ before returning
+    //             ResetAll(inputQubits + [auxQubit]);
 
-                // Return the found minimum or maximum index
-                return candidate;
-            }
-        }
-    }
+    //             // Return the found minimum or maximum index
+    //             return candidate;
+    //         }
+    //     }
+    // }
     // Dürr-Høyer for finding min or max algorithm
     operation DurrHoyerAlgorithmProduction(
     list : Int[],
@@ -250,6 +250,6 @@ namespace durrhoyerAlgorithm {
     }
 
 
-export DurrHoyerAlgorithm;
+export DurrHoyerAlgorithmProduction;
 
 }

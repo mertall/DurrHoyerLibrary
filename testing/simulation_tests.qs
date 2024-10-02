@@ -37,7 +37,7 @@ namespace Test {
             // Run the Durr-Hoyer algorithm multiple times (shots)
             for _ in 1..shots {
                 let candidate = DrawRandomInt(0, Length(list) - 1);
-                let foundIndex : Int = DurrHoyerAlgorithm(list, nQubits, testType, candidate, listSize);
+                let foundIndex : Int = DurrHoyerAlgorithmSimulation(list, nQubits, testType, candidate, listSize);
 
                 // Check if the found index matches the expected index
                 if (foundIndex == expectedIndex) {
