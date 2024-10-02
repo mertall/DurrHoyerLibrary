@@ -115,9 +115,7 @@ namespace durrhoyerAlgorithm {
         OracleMoreThan(threshold, inputQubits, auxQubit);
         DiffusionOperator(inputQubits);
     }
-
-    // Dürr-Høyer for finding min or max algorithm
-    operation DurrHoyerAlgorithm(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
+    operation DurrHoyerAlgorithmSimulation(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
         mutable candidate = candidate;  // Random initial candidate
 
         use inputQubits = Qubit[nQubits] {
@@ -205,6 +203,53 @@ namespace durrhoyerAlgorithm {
             }
         }
     }
-    export DurrHoyerAlgorithm;
+    // Dürr-Høyer for finding min or max algorithm
+    operation DurrHoyerAlgorithmProduction(
+    list : Int[],
+    nQubits : Int,
+    type : String,
+    candidate : Int,
+    listSize : Int,
+    optimalIterations : Int
+    ) : Result[]{
+        // Initial candidate (passed as parameter)
+        let threshold = list[candidate];
+
+        use inputQubits = Qubit[nQubits];
+        use auxQubit = Qubit();
+
+        // Prepare the superposition state
+        ApplyToEach(H, inputQubits);
+
+        // Define the oracle based on the type
+        let oracle = (type == "min")
+            ? OracleLessThan(threshold, _, auxQubit)
+            | OracleMoreThan(threshold, _, auxQubit);
+        let grover = (type == "min")
+            ? GroverIterationMin(threshold, _, auxQubit)
+            | GroverIterationMax(threshold, _, auxQubit);
+
+        // Grover's algorithm iterations
+        for _ in 1..optimalIterations {
+            // Apply the oracle
+            oracle(inputQubits);
+            // Apply the diffusion operator
+            grover(inputQubits);
+        }
+
+        // Measure the qubits
+        let results = MeasureEachZ(inputQubits);
+
+        // Reset qubits
+        ResetAll(inputQubits + [auxQubit]);
+
+        // Convert results to integer index
+
+        // Return the candidate index
+        return results;
+    }
+
+
+export DurrHoyerAlgorithm;
 
 }

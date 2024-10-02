@@ -51,9 +51,9 @@ namespace Test {
             // Assert that the probability is above 50%
             Fact(probability >= 0.49, $"Probability of finding the {testType} for list {list} is less than 50%. Found: {probability * 100.0}%");
 
-            // Optionally print debugging info
-            Message($"List: {list}");
-            Message($"Probability of finding the {testType} is {probability * 100.0}%");
+            // // Optionally print debugging info
+            // Message($"List: {list}");
+            // Message($"Probability of finding the {testType} is {probability * 100.0}%");
         }
     }
 
@@ -101,8 +101,8 @@ namespace Test {
 }
     @EntryPoint()
     operation RunMinTest() : Unit {
-        //RunDurrHoyerMinimumUnitTestWithShots(1000);
-        //RunDurrHoyerMaximumUnitTestWithShots(1000);
-        // RunDurrHoyerZeroValuesUnitTestWithShots(1000);
+        RunDurrHoyerMinimumUnitTestWithShots(1000);
+        RunDurrHoyerMaximumUnitTestWithShots(1000);
+        RunDurrHoyerZeroValuesUnitTestWithShots(1000);
     }
 }
