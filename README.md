@@ -18,6 +18,7 @@
 | **4**  | [0, 7, 8, 4, 1, 2, 3, 5, 6, 9]      | 0               | 0                     | Success         
 | **5**        | [0, 8, 4, 3, 9, 1, 5, 6, 2, 7]      | 0               | 0                     | Success          
 | **6**        | [2, 8, 0, 3, 4, 9, 5, 10, 7, 1]     | 0               | 2                     | Fail             
+=======
 
 ## Quantum Computer Results
 In progress
@@ -26,6 +27,8 @@ In progress
 - [x] Unit Test for finding Min
 - [x] Unit Test for finding Max
 - [x] DurrHoyerAlgorithm Results on Quantum Computer
+
+- [ ] DurrHoyerAlgorithm Results on Quantum Computer
 - [ ] Oracle and Unit Test for finding Median
 - [ ] Oracle and Unit Test for finding Range
 - [ ] Implement [QMSA](https://arxiv.org/pdf/1908.07943)
