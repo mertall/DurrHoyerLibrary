@@ -21,10 +21,26 @@ def result_array_as_int(results):
             value |= (1 << i)
     return value
 
+def count_better_candidates(list_data, candidate_value, type_search):
+    """
+    Counts the number of elements in the list that are better than the candidate value.
+    
+    :param list_data: List of integers to search.
+    :param candidate_value: Current candidate value.
+    :param type_search: "min" or "max".
+    :return: Number of better candidates (M).
+    """
+    if type_search == "min":
+        return sum(1 for value in list_data if value < candidate_value)
+    elif type_search == "max":
+        return sum(1 for value in list_data if value > candidate_value)
+    else:
+        raise ValueError("type_search must be either 'min' or 'max'.")
+
 def run_durr_hoyer_algorithm(list_data, type_search="min"):
     """
-    Executes the Dürr-Høyer algorithm to find the minimum or maximum element in the list
-    using a fixed number of steps: 22.5 * sqrt(N) + 1.4 * log2(N).
+    Executes the Dürr-Høyer algorithm to find the minimum or maximum element in the list.
+    Manages iterations in Python, updating the excluded values after each iteration.
     
     :param list_data: List of integers to search.
     :param type_search: "min" or "max".
@@ -39,55 +55,103 @@ def run_durr_hoyer_algorithm(list_data, type_search="min"):
 
     # Calculate the number of qubits required to represent all indices
     n_qubits = math.ceil(math.log2(N))
-    if 2**n_qubits < N:
+    if 2 ** n_qubits < N:
         print(f"Adjusting number of qubits from {n_qubits} to {n_qubits + 1} to accommodate all indices.")
         n_qubits += 1
 
-    # Calculate the number of steps based on the given formula
-    # Formula for tight bounds: (pi/4) * sqrt(N)
-    num_steps = (math.pi/4) * math.sqrt(N)
-    num_steps = math.ceil(num_steps)  # Round up to the nearest integer
-    print(f"Calculated number of steps: {num_steps} (pi/4) * sqrt(N)  ")
-
     # Initialize candidate randomly
     candidate_index = random.randint(0, N - 1)
-    candidate = list_data[candidate_index]
-    print(f"Initial candidate: Index = {candidate_index}, Value = {candidate}")
+    candidate_value = list_data[candidate_index]
+    print(f"Initial candidate: Index = {candidate_index}, Value = {candidate_value}")
 
-    # Execute the Dürr-Høyer algorithm via Q# backend
-    measured_result = dh_backend.execute_dh(
-        optimal_iterations=num_steps,
-        input_list=list_data,
-        nqubits=n_qubits,
-        random_index=candidate_index,
-        type=type_search,
-        list_size=N
-    )
-    print(f"Measured Result (Binary): {measured_result}")
+    # Initialize the list of excluded values with the initial candidate index
+    excluded_values = [candidate_index]
 
-    # Convert the binary result to an integer index
-    new_candidate_index = result_array_as_int(measured_result)
-    print(f"Measured Candidate Index: {new_candidate_index}")
+    # Initialize bit_list with zeros
+    bit_list = [0] * N
 
-    # Validate the measured index
-    if new_candidate_index < 0 or new_candidate_index >= N:
-        print("Measured index out of bounds. Skipping update.")
-        # Return the current candidate as no valid update occurred
-        return candidate
+    iteration = 0
+    while True:
+        iteration += 1
+        print(f"\n--- Iteration {iteration} ---")
+        # Count the number of better candidates (M)
+        M = count_better_candidates(list_data, candidate_value, type_search)
+        print(f"Number of better candidates (M): {M}")
 
-    new_candidate = list_data[new_candidate_index]
-    print(f"Measured Candidate Value: {new_candidate}")
+        # If no better candidates, return the current candidate
+        if M == 0:
+            print("No better candidates found. Algorithm terminates.")
+            break
 
-    # Update the candidate if a better one is found
-    if (type_search == "min" and new_candidate < candidate) or (type_search == "max" and new_candidate > candidate):
-        print(f"Updating candidate from index {candidate_index} to {new_candidate_index}")
-        candidate_index = new_candidate_index
-        candidate = new_candidate
-    else:
-        print("No better candidate found in this step.")
+        # Calculate the optimal number of iterations (k)
+        k = int(round((math.pi / 4) * math.sqrt(N / M)))
+        print(f"Calculated optimal iterations (k): {k}")
 
-    print(f"\nFinal candidate after {num_steps} steps: Index = {candidate_index}, Value = {candidate}")
-    return candidate
+        # Execute the Dürr-Høyer algorithm via Q# backend
+        measured_result = dh_backend.execute_dh(
+            input_list=list_data,
+            nqubits=n_qubits,
+            random_index=candidate_index,
+            type=type_search,
+            list_size=N,
+            excluded_values=excluded_values
+        )
+        print(f"Measured Result (Binary): {measured_result}")
+
+        # Convert the binary result to an integer index
+        new_candidate_index = result_array_as_int(measured_result)
+        print(f"Measured Candidate Index: {new_candidate_index}")
+
+        # Validate the measured index
+        if new_candidate_index < 0 or new_candidate_index >= N:
+            print("Measured index out of bounds. Skipping update.")
+            break  # Exit the loop as no valid update occurred
+
+        new_candidate_value = list_data[new_candidate_index]
+        print(f"Measured Candidate Value: {new_candidate_value}")
+
+        # Update the candidate if a better one is found
+        better_candidate_found = False
+        if (type_search == "min" and new_candidate_value < candidate_value):
+            print(f"Updating candidate from index {candidate_index} to {new_candidate_index}")
+            candidate_index = new_candidate_index
+            candidate_value = new_candidate_value
+            better_candidate_found = True
+        elif (type_search == "max" and new_candidate_value > candidate_value):
+            print(f"Updating candidate from index {candidate_index} to {new_candidate_index}")
+            candidate_index = new_candidate_index
+            candidate_value = new_candidate_value
+            better_candidate_found = True
+        else:
+            print("No better candidate found in this iteration.")
+            # Add the measured index to the excluded values
+            if new_candidate_index not in excluded_values:
+                excluded_values.append(new_candidate_index)
+            break  # Exit the loop as no better candidate was found
+
+        # Update excluded values
+        if candidate_index not in excluded_values:
+            excluded_values.append(candidate_index)
+
+        # Update bit_list based on comparison with candidate
+        for idx, value in enumerate(list_data):
+            if type_search == "min":
+                if value < candidate_value:
+                    bit_list[idx] = 1  # Flip bit from 0 to 1
+            elif type_search == "max":
+                if value > candidate_value:
+                    bit_list[idx] = 1  # Flip bit from 0 to 1
+
+        print(f"Excluded Values: {excluded_values}")
+        print(f"Bit List: {bit_list}")
+
+        # Continue iterating if a better candidate was found
+        if not better_candidate_found:
+            print("No better candidate found. Algorithm terminates.")
+            break
+
+    print(f"\nFinal candidate after {iteration} iterations: Index = {candidate_index}, Value = {candidate_value}")
+    return candidate_value
 
 def generate_sample_list(N, lower=0, upper=10):
     """
@@ -107,13 +171,13 @@ def run_shots(shots=10):
     """
     Runs the Dürr-Høyer algorithm multiple times and calculates the accuracy of finding
     the correct minimum and maximum values.
-    
+
     :param shots: Number of shots.
     """
     # Parameters for the sample list
-    N = 10  # Size of the list
+    N = 7  # Size of the list
     lower = 0
-    upper = 10
+    upper = 100
 
     # Generate a single sample list for all shots
     sample_list = generate_sample_list(N, lower, upper)
@@ -130,33 +194,35 @@ def run_shots(shots=10):
     correct_max = 0
 
     for shot in range(1, shots + 1):
-        print(f"--- Shot {shot} ---")
-        
+        print(f"\n=== Shot {shot} ===")
+
         # Run min search
+        print("\n--- Minimum Search ---")
         found_min = run_durr_hoyer_algorithm(sample_list, type_search="min")
         if found_min == actual_min:
             correct_min += 1
-            print("Min search successful.\n")
+            print("Min search successful.")
         else:
-            print(f"Min search failed. Found {found_min}, Expected {actual_min}\n")
-        
+            print(f"Min search failed. Found {found_min}, Expected {actual_min}")
+
         # Run max search
+        print("\n--- Maximum Search ---")
         found_max = run_durr_hoyer_algorithm(sample_list, type_search="max")
         if found_max == actual_max:
             correct_max += 1
-            print("Max search successful.\n")
+            print("Max search successful.")
         else:
-            print(f"Max search failed. Found {found_max}, Expected {actual_max}\n")
+            print(f"Max search failed. Found {found_max}, Expected {actual_max}")
 
     # Calculate success rates
     min_success_rate = (correct_min / shots) * 100
     max_success_rate = (correct_max / shots) * 100
 
-    print(f"--- Shots Results ---")
+    print(f"\n--- Shots Results ---")
     print(f"Total shots: {shots}")
     print(f"Minimum Search: {correct_min} successes out of {shots} ({min_success_rate:.2f}%)")
     print(f"Maximum Search: {correct_max} successes out of {shots} ({max_success_rate:.2f}%)")
 
 if __name__ == "__main__":
-    # Run 100 shots and calculate the average success rates
+    # Run the shots
     run_shots(shots=10)

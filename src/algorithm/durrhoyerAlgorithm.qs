@@ -51,50 +51,98 @@ namespace durrhoyerAlgorithm {
         return binary;
     }
 
-    // Oracle that marks elements less than the threshold through Most Signficant Bit comparision
-    operation OracleLessThan(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit is Adj + Ctl {
-        // Convert the threshold to binary and compare
-        let thresholdBits = ConvertToBinary(threshold, Length(inputQubits));
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == Zero) {
-                //  Most Signficant Bit comparision, if There is a zero when the bits are compared we have something less than
-                X(inputQubits[i]); // Flip qubits that should be zero in the threshold
+    operation IntArrToQubits(bits : Int[], qubits : Qubit[]) : Unit {
+        for i in 0 .. Length(bits) - 1 {
+            if bits[i] == 1 {
+                X(qubits[i]); // Flip qubit to |1⟩ if bit is 1
+            }
+        }
+}
+/// Oracle that marks elements less than the threshold using a multi-bit comparator
+/// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
+    operation OracleLessThan(
+        threshold : Int, 
+        inputQubits : Qubit[], 
+        auxQubit : Qubit,
+        excludedIndices : Int[] 
+    ) : Unit is Adj + Ctl {
+        let n = Length(inputQubits);
+        let thresholdBits = ConvertToBinary(threshold, n);
+
+        // Ancilla qubit to track if input < threshold
+        use ancilla = Qubit();
+
+        // Initialize ancilla to |0>
+        Reset(ancilla);
+
+        // Iterate through each bit from MSB to LSB
+        for i in n - 1 .. -1 .. 0 {
+            let inputBit = inputQubits[i];
+            let thresholdBit = thresholdBits[i];
+
+            // Compare inputBit and thresholdBit
+            if (thresholdBit == Zero) {
+                // If threshold bit is 0
+                // If input bit is 1, then input > threshold at this bit
+                CNOT(inputBit, ancilla);
+            } elif (thresholdBit == One) {
+                // If threshold bit is 1
+                // If input bit is 0, then input < threshold at this bit
+                CNOT(inputBit, ancilla);
+                X(ancilla); // Invert to mark less than
             }
         }
 
-        // Controlled-Z gate to flip the phase of the state if the element is less than the threshold
-        Controlled Z(inputQubits, auxQubit);
+        // Apply phase flip if ancilla indicates input < threshold
+        CZ(ancilla, auxQubit);
 
-        // Undo the X operations to revert qubits
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == Zero) {
-                X(inputQubits[i]);
-            }
-        }
+        // Undo operations (if any) and reset ancilla
+        Reset(ancilla);
+
     }
+    
+    /// Oracle that marks elements less than the threshold using a multi-bit comparator
+/// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
+    operation OracleMoreThan(
+        threshold : Int, 
+        inputQubits : Qubit[], 
+        auxQubit : Qubit,
+        excludedIndices : Int[] 
+    ) : Unit is Adj + Ctl {
+        let n = Length(inputQubits);
+        let thresholdBits = ConvertToBinary(threshold, n);
 
-    // Oracle that marks elements more than the threshold through Most Signficant Bit comparision
-    operation OracleMoreThan(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit is Adj + Ctl {
-        // Convert the threshold to binary and compare
-        let thresholdBits = ConvertToBinary(threshold, Length(inputQubits));
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == One) {
-                //  Most Signficant Bit comparision, if tbere is a one when the bits are compared we have something more than
-                X(inputQubits[i]); // Flip qubits that should be zero in the threshold
+        // Ancilla qubit to track if input < threshold
+        use ancilla = Qubit();
+
+        // Initialize ancilla to |0>
+        Reset(ancilla);
+
+        // Iterate through each bit from MSB to LSB
+        for i in n - 1 .. -1 .. 0 {
+            let inputBit = inputQubits[i];
+            let thresholdBit = thresholdBits[i];
+
+            // Compare inputBit and thresholdBit
+            if (thresholdBit == Zero) {
+                // If threshold bit is 0
+                // If input bit is 1, then input > threshold at this bit
+                CNOT(inputBit, ancilla);
+                X(ancilla); // Invert to mark less than
+            } elif (thresholdBit == One) {
+                // If threshold bit is 1
+                // If input bit is 0, then input < threshold at this bit
+                CNOT(inputBit, ancilla);
             }
         }
 
-        // Controlled-Z gate to flip the phase of the state if the element is less than the threshold
-        Controlled Z(inputQubits, auxQubit);
+        // Apply phase flip if ancilla indicates input < threshold
+        CZ(ancilla, auxQubit);
 
-        // Undo the X operations to revert qubits
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == One) {
-                X(inputQubits[i]);
-            }
-        }
+        // Undo operations (if any) and reset ancilla
+        Reset(ancilla);
+
     }
-
     // Diffusion operator (Grover's diffusion)
     operation DiffusionOperator(qubits : Qubit[]) : Unit {
         ApplyToEach(H, qubits);
@@ -105,14 +153,14 @@ namespace durrhoyerAlgorithm {
     }
 
     // Grover iteration with the oracle and diffusion operator for min
-    operation GroverIterationMin(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit {
-        OracleLessThan(threshold, inputQubits, auxQubit);
+    operation GroverIterationMin(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit, excludedIndices : Int[]) : Unit {
+        OracleLessThan(threshold, inputQubits, auxQubit, excludedIndices);
         DiffusionOperator(inputQubits);
     }
 
     // Grover iteration with the oracle and diffusion operator for max
-    operation GroverIterationMax(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit {
-        OracleMoreThan(threshold, inputQubits, auxQubit);
+    operation GroverIterationMax(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit,excludedIndices : Int[]) : Unit {
+        OracleMoreThan(threshold, inputQubits, auxQubit,excludedIndices);
         DiffusionOperator(inputQubits);
     }
     // operation DurrHoyerAlgorithmSimulation(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
@@ -210,7 +258,7 @@ namespace durrhoyerAlgorithm {
     type : String,
     candidate : Int,
     listSize : Int,
-    optimalIterations : Int
+    excludedValues : Int[]
     ) : Result[]{
         // Initial candidate (passed as parameter)
         let threshold = list[candidate];
@@ -221,22 +269,15 @@ namespace durrhoyerAlgorithm {
         // Prepare the superposition state
         ApplyToEach(H, inputQubits);
 
-        // Define the oracle based on the type
-        let oracle = (type == "min")
-            ? OracleLessThan(threshold, _, auxQubit)
-            | OracleMoreThan(threshold, _, auxQubit);
-        let grover = (type == "min")
-            ? GroverIterationMin(threshold, _, auxQubit)
-            | GroverIterationMax(threshold, _, auxQubit);
 
-        // Grover's algorithm iterations
-        for _ in 1..optimalIterations {
-            // Apply the oracle
-            oracle(inputQubits);
-            // Apply the diffusion operator
-            grover(inputQubits);
-        }
+        let iteration = (type == "min")
+            ? GroverIterationMin(threshold, _, auxQubit, excludedValues)
+            | GroverIterationMax(threshold, _, auxQubit, excludedValues);
 
+
+        // Apply the iteration
+        iteration(inputQubits);
+        
         // Measure the qubits
         let results = MeasureEachZ(inputQubits);
 

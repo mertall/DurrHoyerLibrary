@@ -5,12 +5,12 @@ import random
 class QuantumBackendDH():
     def __init__(self):
         self.workspace = azure.quantum.Workspace(
-            resource_id = "/subscriptions/3238cc54-1cd6-45c7-9d38-171cc490d18c/resourceGroups/AzureQuantum/providers/Microsoft.Quantum/Workspaces/durrhoyersim",
+            resource_id = "/subscriptions/d8ddd235-82ee-4455-9a76-7206f23c32f4/resourceGroups/AzureQuantum/providers/Microsoft.Quantum/Workspaces/algotestmin",
             location = "eastus"
         )
 
     
-    def execute_dh(self,optimal_iterations, input_list, nqubits, type, list_size, random_index):
+    def execute_dh(self,excluded_values, input_list, nqubits, type, list_size, random_index):
         random_index = random.randint(0,list_size-1)
 
         input_params = {
@@ -19,7 +19,7 @@ class QuantumBackendDH():
             "type": type,  # or "max"
             "candidate": random_index,
             "listSize": list_size,
-            "optimalIterations": optimal_iterations
+            "excludedValues": excluded_values
         }
 
         inputs = ", ".join([
@@ -28,7 +28,7 @@ class QuantumBackendDH():
             f'"{input_params["type"]}"',
             str(input_params["candidate"]),
             str(input_params["listSize"]),
-            str(input_params["optimalIterations"])
+            str(input_params["excludedValues"])
         ])
         MyTargets = self.workspace.get_targets()
 
