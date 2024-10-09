@@ -1,6 +1,6 @@
 # DurrHoyerLibrary
 ## Rigetti Simulator QVM Results
-# Success Rate vs Number of Shot of Algorithm
+### Success Rate vs Number of shots of Durr Hoyer Algorithm
 ![Chart Example](assets/Figure_1.png)
 ## Microsoft Quantum Simulator Results
 | List     | Probability (Min) | List     | Probability (Max) |
