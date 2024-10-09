@@ -58,90 +58,82 @@ namespace durrhoyerAlgorithm {
             }
         }
 }
-/// Oracle that marks elements less than the threshold using a multi-bit comparator
-/// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
-    operation OracleLessThan(
-        threshold : Int, 
-        inputQubits : Qubit[], 
-        auxQubit : Qubit,
-        excludedIndices : Int[] 
-    ) : Unit is Adj + Ctl {
-        let n = Length(inputQubits);
-        let thresholdBits = ConvertToBinary(threshold, n);
+    /// # Summary
+    /// Oracle that flips the phase of the target qubit when clause qubits match the specified clause.
+    /// Equivalent to a multi-controlled X gate with a specific control state.
+    operation OracleLessThan(clause : Int, clauseQubits : Qubit[], output : Qubit) : Unit is Adj + Ctl {
+        // Determine the number of control qubits
+        let n = Length(clauseQubits);
 
-        // Ancilla qubit to track if input < threshold
-        use ancilla = Qubit();
+        // Convert the clause integer to an n-bit binary string and reverse it
+        // to match qubit ordering (least significant bit first)
+        let clauseBinary = ConvertToBinary(clause, n);
 
-        // Initialize ancilla to |0>
-        Reset(ancilla);
-
-        // Iterate through each bit from MSB to LSB
-        for i in n - 1 .. -1 .. 0 {
-            let inputBit = inputQubits[i];
-            let thresholdBit = thresholdBits[i];
-
-            // Compare inputBit and thresholdBit
-            if (thresholdBit == Zero) {
-                // If threshold bit is 0
-                // If input bit is 1, then input > threshold at this bit
-                CNOT(inputBit, ancilla);
-            } elif (thresholdBit == One) {
-                // If threshold bit is 1
-                // If input bit is 0, then input < threshold at this bit
-                CNOT(inputBit, ancilla);
-                X(ancilla); // Invert to mark less than
+        // Apply X gates to qubits where the clause binary has '0'
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == Zero) {
+                X(clauseQubits[index]);
             }
         }
 
-        // Apply phase flip if ancilla indicates input < threshold
-        CZ(ancilla, auxQubit);
+        // Apply a multi-controlled Z gate (phase flip)
+        // Since Q# does not have a direct MCZ gate, we can implement it using
+        // a multi-controlled X gate with an ancilla qubit or by using the
+        // native Toffoli (CCNOT) gates for up to 2 controls.
+        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
 
-        // Undo operations (if any) and reset ancilla
-        Reset(ancilla);
+        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
+        // MCX gate with a control state. You might need to use ancilla qubits for more
+        // than two controls. Here, we'll assume n <= 3 for simplicity.
 
+        Controlled X(clauseQubits[0..n-1], output);
+        
+
+        // Revert X gates to restore the original state of clause qubits
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == Zero) {
+                X(clauseQubits[index]);
+            }
+        }
     }
-    
+
+
     /// Oracle that marks elements less than the threshold using a multi-bit comparator
 /// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
-    operation OracleMoreThan(
-        threshold : Int, 
-        inputQubits : Qubit[], 
-        auxQubit : Qubit,
-        excludedIndices : Int[] 
-    ) : Unit is Adj + Ctl {
-        let n = Length(inputQubits);
-        let thresholdBits = ConvertToBinary(threshold, n);
+    operation OracleMoreThan(clause : Int, clauseQubits : Qubit[], output : Qubit) : Unit is Adj + Ctl {
+                // Determine the number of control qubits
+        let n = Length(clauseQubits);
 
-        // Ancilla qubit to track if input < threshold
-        use ancilla = Qubit();
+        // Convert the clause integer to an n-bit binary string and reverse it
+        // to match qubit ordering (least significant bit first)
+        let clauseBinary = ConvertToBinary(clause, n);
 
-        // Initialize ancilla to |0>
-        Reset(ancilla);
-
-        // Iterate through each bit from MSB to LSB
-        for i in n - 1 .. -1 .. 0 {
-            let inputBit = inputQubits[i];
-            let thresholdBit = thresholdBits[i];
-
-            // Compare inputBit and thresholdBit
-            if (thresholdBit == Zero) {
-                // If threshold bit is 0
-                // If input bit is 1, then input > threshold at this bit
-                CNOT(inputBit, ancilla);
-                X(ancilla); // Invert to mark less than
-            } elif (thresholdBit == One) {
-                // If threshold bit is 1
-                // If input bit is 0, then input < threshold at this bit
-                CNOT(inputBit, ancilla);
+        // Apply X gates to qubits where the clause binary has '0'
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == One) {
+                X(clauseQubits[index]);
             }
         }
 
-        // Apply phase flip if ancilla indicates input < threshold
-        CZ(ancilla, auxQubit);
+        // Apply a multi-controlled Z gate (phase flip)
+        // Since Q# does not have a direct MCZ gate, we can implement it using
+        // a multi-controlled X gate with an ancilla qubit or by using the
+        // native Toffoli (CCNOT) gates for up to 2 controls.
+        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
 
-        // Undo operations (if any) and reset ancilla
-        Reset(ancilla);
+        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
+        // MCX gate with a control state. You might need to use ancilla qubits for more
+        // than two controls. Here, we'll assume n <= 3 for simplicity.
 
+        Controlled X(clauseQubits[0..n-1], output);
+        
+
+        // Revert X gates to restore the original state of clause qubits
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == One) {
+                X(clauseQubits[index]);
+            }
+        }
     }
     // Diffusion operator (Grover's diffusion)
     operation DiffusionOperator(qubits : Qubit[]) : Unit {
@@ -153,15 +145,19 @@ namespace durrhoyerAlgorithm {
     }
 
     // Grover iteration with the oracle and diffusion operator for min
-    operation GroverIterationMin(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit, excludedIndices : Int[]) : Unit {
-        OracleLessThan(threshold, inputQubits, auxQubit, excludedIndices);
-        DiffusionOperator(inputQubits);
+    operation GroverIterationMin(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit, iterations: Int) : Unit {
+        OracleLessThan(threshold, inputQubits, auxQubit);
+        for i in 1 .. iterations {
+            DiffusionOperator(inputQubits);
+        }
     }
 
     // Grover iteration with the oracle and diffusion operator for max
-    operation GroverIterationMax(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit,excludedIndices : Int[]) : Unit {
-        OracleMoreThan(threshold, inputQubits, auxQubit,excludedIndices);
-        DiffusionOperator(inputQubits);
+    operation GroverIterationMax(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit, iterations: Int) : Unit {
+        OracleMoreThan(threshold, inputQubits, auxQubit);
+        for i in 1 .. iterations {
+            DiffusionOperator(inputQubits);
+        }
     }
     // operation DurrHoyerAlgorithmSimulation(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
     //     mutable candidate = candidate;  // Random initial candidate
@@ -258,8 +254,8 @@ namespace durrhoyerAlgorithm {
     type : String,
     candidate : Int,
     listSize : Int,
-    excludedValues : Int[]
-    ) : Result[]{
+    iterations : Int
+    ) : Result[] {
         // Initial candidate (passed as parameter)
         let threshold = list[candidate];
 
@@ -271,9 +267,8 @@ namespace durrhoyerAlgorithm {
 
 
         let iteration = (type == "min")
-            ? GroverIterationMin(threshold, _, auxQubit, excludedValues)
-            | GroverIterationMax(threshold, _, auxQubit, excludedValues);
-
+            ? GroverIterationMin(threshold, _, auxQubit, iterations)
+            | GroverIterationMax(threshold, _, auxQubit, iterations);
 
         // Apply the iteration
         iteration(inputQubits);
@@ -289,8 +284,6 @@ namespace durrhoyerAlgorithm {
         // Return the candidate index
         return results;
     }
-
-
 export DurrHoyerAlgorithmProduction;
 
 }

@@ -1,4 +1,7 @@
 # DurrHoyerLibrary
+## Rigetti Simulator QVM Results
+# Success Rate vs Number of Shot of Algorithm
+![Chart Example](assets/Figure_1.png)
 ## Microsoft Quantum Simulator Results
 | List     | Probability (Min) | List     | Probability (Max) |
 |-----------------------|------------------:|---------------------|------------------:|

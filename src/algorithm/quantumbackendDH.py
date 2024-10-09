@@ -2,6 +2,7 @@ import qsharp
 import azure.quantum
 import math
 import random
+
 class QuantumBackendDH():
     def __init__(self):
         self.workspace = azure.quantum.Workspace(
@@ -10,7 +11,7 @@ class QuantumBackendDH():
         )
 
     
-    def execute_dh(self,excluded_values, input_list, nqubits, type, list_size, random_index):
+    def execute_dh(self,iterations, input_list, nqubits, type, list_size, random_index):
         random_index = random.randint(0,list_size-1)
 
         input_params = {
@@ -19,7 +20,7 @@ class QuantumBackendDH():
             "type": type,  # or "max"
             "candidate": random_index,
             "listSize": list_size,
-            "excludedValues": excluded_values
+            "iterations": iterations
         }
 
         inputs = ", ".join([
@@ -28,19 +29,20 @@ class QuantumBackendDH():
             f'"{input_params["type"]}"',
             str(input_params["candidate"]),
             str(input_params["listSize"]),
-            str(input_params["excludedValues"])
+            str(input_params["iterations"])
         ])
-        MyTargets = self.workspace.get_targets()
 
-        for x in MyTargets:
-            print(x)
+        # MyTargets = self.workspace.get_targets()
+
+        # for x in MyTargets:
+        #     print(x)
         qsharp.init(project_root = '../DurrHoyerLibrary/', target_profile=qsharp.TargetProfile.Base)
         MyProgram = qsharp.compile("durrhoyerAlgorithm.DurrHoyerAlgorithmProduction("+inputs+")")
 
 
-        MyTarget = self.workspace.get_targets("ionq.qpu.aria-1")
+        MyTarget = self.workspace.get_targets("rigetti.sim.qvm")
 
         job = MyTarget.submit(MyProgram, "MyPythonJob", shots=1)
-        results = job.get_results(timeout_secs=3600)
+        results = job.get_results()
         print("\nResults: ", results)
         return results
