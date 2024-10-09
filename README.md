@@ -1,6 +1,7 @@
 # DurrHoyerLibrary
 ## Rigetti Simulator QVM Results
 ### Success Rate vs Number of shots of Durr Hoyer Algorithm
+### 100 Trials for each number of Shot(s)
 ![Chart Example](assets/Figure_1.png)
 ## Microsoft Quantum Simulator Results
 | List     | Probability (Min) | List     | Probability (Max) |
