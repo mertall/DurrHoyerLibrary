@@ -5,13 +5,13 @@
   - Success Rate vs Number of shots of Durr Hoyer Algorithm
   - 100 Trials for each number of Shot(s)
 
-![Chart Example](assets/rigetti_ankaa_9q_3.png)
+![Rigetti Ankaa 9Q 3](assets/rigetti_ankaa_9q_3.png)
 
 - Rigetti Simulator QVM Results
   - Randomly Generated List of 6 elements, with max value of 5
   - Success Rate vs Number of shots of Durr Hoyer Algorithm
   - 100 Trials for each number of Shot(s)
-![Chart Example](assets/rigetti_sim_qvm.png)
+![Rigettin Sim QVM](assets/rigetti_sim_qvm.png)
 
 - Ionq Aria Quantum Computer Results
   - No max results because above 7 is more than 4 qubits and the algorithm at this stage in testing was unable to dynamically allocate qubits to max number in list.
