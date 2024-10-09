@@ -51,50 +51,90 @@ namespace durrhoyerAlgorithm {
         return binary;
     }
 
-    // Oracle that marks elements less than the threshold through Most Signficant Bit comparision
-    operation OracleLessThan(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit is Adj + Ctl {
-        // Convert the threshold to binary and compare
-        let thresholdBits = ConvertToBinary(threshold, Length(inputQubits));
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == Zero) {
-                //  Most Signficant Bit comparision, if There is a zero when the bits are compared we have something less than
-                X(inputQubits[i]); // Flip qubits that should be zero in the threshold
+    operation IntArrToQubits(bits : Int[], qubits : Qubit[]) : Unit {
+        for i in 0 .. Length(bits) - 1 {
+            if bits[i] == 1 {
+                X(qubits[i]); // Flip qubit to |1⟩ if bit is 1
+            }
+        }
+}
+    /// # Summary
+    /// Oracle that flips the phase of the target qubit when clause qubits match the specified clause.
+    /// Equivalent to a multi-controlled X gate with a specific control state.
+    operation OracleLessThan(clause : Int, clauseQubits : Qubit[], output : Qubit) : Unit is Adj + Ctl {
+        // Determine the number of control qubits
+        let n = Length(clauseQubits);
+
+        // Convert the clause integer to an n-bit binary string and reverse it
+        // to match qubit ordering (least significant bit first)
+        let clauseBinary = ConvertToBinary(clause, n);
+
+        // Apply X gates to qubits where the clause binary has '0'
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == Zero) {
+                X(clauseQubits[index]);
             }
         }
 
-        // Controlled-Z gate to flip the phase of the state if the element is less than the threshold
-        Controlled Z(inputQubits, auxQubit);
+        // Apply a multi-controlled Z gate (phase flip)
+        // Since Q# does not have a direct MCZ gate, we can implement it using
+        // a multi-controlled X gate with an ancilla qubit or by using the
+        // native Toffoli (CCNOT) gates for up to 2 controls.
+        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
 
-        // Undo the X operations to revert qubits
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == Zero) {
-                X(inputQubits[i]);
+        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
+        // MCX gate with a control state. You might need to use ancilla qubits for more
+        // than two controls. Here, we'll assume n <= 3 for simplicity.
+
+        Controlled X(clauseQubits[0..n-1], output);
+        
+
+        // Revert X gates to restore the original state of clause qubits
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == Zero) {
+                X(clauseQubits[index]);
             }
         }
     }
 
-    // Oracle that marks elements more than the threshold through Most Signficant Bit comparision
-    operation OracleMoreThan(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit is Adj + Ctl {
-        // Convert the threshold to binary and compare
-        let thresholdBits = ConvertToBinary(threshold, Length(inputQubits));
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == One) {
-                //  Most Signficant Bit comparision, if tbere is a one when the bits are compared we have something more than
-                X(inputQubits[i]); // Flip qubits that should be zero in the threshold
+
+    /// Oracle that marks elements less than the threshold using a multi-bit comparator
+/// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
+    operation OracleMoreThan(clause : Int, clauseQubits : Qubit[], output : Qubit) : Unit is Adj + Ctl {
+                // Determine the number of control qubits
+        let n = Length(clauseQubits);
+
+        // Convert the clause integer to an n-bit binary string and reverse it
+        // to match qubit ordering (least significant bit first)
+        let clauseBinary = ConvertToBinary(clause, n);
+
+        // Apply X gates to qubits where the clause binary has '0'
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == One) {
+                X(clauseQubits[index]);
             }
         }
 
-        // Controlled-Z gate to flip the phase of the state if the element is less than the threshold
-        Controlled Z(inputQubits, auxQubit);
+        // Apply a multi-controlled Z gate (phase flip)
+        // Since Q# does not have a direct MCZ gate, we can implement it using
+        // a multi-controlled X gate with an ancilla qubit or by using the
+        // native Toffoli (CCNOT) gates for up to 2 controls.
+        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
 
-        // Undo the X operations to revert qubits
-        for i in 0..Length(thresholdBits) - 1 {
-            if (thresholdBits[i] == One) {
-                X(inputQubits[i]);
+        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
+        // MCX gate with a control state. You might need to use ancilla qubits for more
+        // than two controls. Here, we'll assume n <= 3 for simplicity.
+
+        Controlled X(clauseQubits[0..n-1], output);
+        
+
+        // Revert X gates to restore the original state of clause qubits
+        for index in 0 .. n - 1 {
+            if (clauseBinary[index] == One) {
+                X(clauseQubits[index]);
             }
         }
     }
-
     // Diffusion operator (Grover's diffusion)
     operation DiffusionOperator(qubits : Qubit[]) : Unit {
         ApplyToEach(H, qubits);
@@ -105,106 +145,145 @@ namespace durrhoyerAlgorithm {
     }
 
     // Grover iteration with the oracle and diffusion operator for min
-    operation GroverIterationMin(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit {
+    operation GroverIterationMin(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit, iterations: Int) : Unit {
         OracleLessThan(threshold, inputQubits, auxQubit);
-        DiffusionOperator(inputQubits);
+        for i in 1 .. iterations {
+            DiffusionOperator(inputQubits);
+        }
     }
 
     // Grover iteration with the oracle and diffusion operator for max
-    operation GroverIterationMax(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit) : Unit {
+    operation GroverIterationMax(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit, iterations: Int) : Unit {
         OracleMoreThan(threshold, inputQubits, auxQubit);
-        DiffusionOperator(inputQubits);
-    }
-
-    // Dürr-Høyer for finding min or max algorithm
-    operation DurrHoyerAlgorithm(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
-        mutable candidate = candidate;  // Random initial candidate
-
-        use inputQubits = Qubit[nQubits] {
-            use auxQubit = Qubit() {
-                // Create a superposition of all states
-                ApplyToEach(H, inputQubits);
-
-                // Continue Grover search until no better candidate is found
-                mutable betterCandidateFound = true;
-                mutable iterationCount = 1; // Track the iteration count manually
-                mutable optimalIterations = 5;
-                mutable validIterations = 0;
-
-                while (validIterations < optimalIterations) {
-                    set betterCandidateFound = false;
-                    let threshold = list[candidate];
-
-                    // Define the comparison function based on the type
-                    let comparison = type == "min" ? (x -> x < threshold) | (x -> x > threshold);
-
-                    // Calculate M: the number of elements smaller than the current candidate (for min)
-                    let M = CountElements(list, comparison);
-
-                    // If there are no more elements smaller/larger, return the candidate
-                    if (M == 0) {
-                        Message("No more elements to compare, search complete.");
-                        ResetAll(inputQubits + [auxQubit]);  // Ensure qubits are reset before returning
-                        return candidate;
-                    }
-
-                    // Calculate the optimal number of Grover iterations
-                    let N = Length(list);
-                    let optimalIterations = Round((PI() / 4.0) * Sqrt(IntAsDouble(N) / IntAsDouble(M)));
-
-                    // Perform Grover iterations for min or max
-                    for i in 1..optimalIterations {
-                        let groverIteration = (type=="min") ? GroverIterationMin | GroverIterationMax;
-                        groverIteration(list[candidate], inputQubits, auxQubit);
-
-                        // Measure qubits and convert to an integer index
-                        mutable results = [];
-                        for qubit in inputQubits {
-                            let result = Measure([PauliZ], [qubit]);
-                            set results += [result];
-
-                            // Reset qubit if it is in the |1⟩ state
-                            if (result == One) {
-                                X(qubit);
-                            }
-                        }
-
-                        let candidateIndex = ResultArrayAsInt(results);
-
-                        // Check if the new candidate is valid and within bounds
-                        if (candidateIndex >= 0 and candidateIndex < listSize) {
-                            let candidateValue = list[candidateIndex];
-
-                            // Update the candidate if a better one is found
-                            if (type == "min" and candidateValue < list[candidate]) {
-                                OracleLessThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
-                                set candidate = candidateIndex;
-                                set betterCandidateFound = true;
-                            } elif (type == "max" and candidateValue > list[candidate]) {
-                                OracleMoreThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
-                                set candidate = candidateIndex;
-                                set betterCandidateFound = true;
-                            }
-                            set validIterations += 1;
-
-                            // Output intermediate results for debugging
-                            Message($"Iteration {validIterations}: Measured index = {candidateIndex}, Value = {candidateValue}");
-                        }
-                        // Reset all qubits to |0⟩ before returning
-                        ResetAll(inputQubits + [auxQubit]);
-
-                    }
-
-                }
-
-                // Reset all qubits to |0⟩ before returning
-                ResetAll(inputQubits + [auxQubit]);
-
-                // Return the found minimum or maximum index
-                return candidate;
-            }
+        for i in 1 .. iterations {
+            DiffusionOperator(inputQubits);
         }
     }
-    export DurrHoyerAlgorithm;
+    // operation DurrHoyerAlgorithmSimulation(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
+    //     mutable candidate = candidate;  // Random initial candidate
+
+    //     use inputQubits = Qubit[nQubits] {
+    //         use auxQubit = Qubit() {
+    //             // Create a superposition of all states
+    //             ApplyToEach(H, inputQubits);
+
+    //             // Continue Grover search until no better candidate is found
+    //             mutable betterCandidateFound = true;
+    //             mutable iterationCount = 1; // Track the iteration count manually
+    //             mutable optimalIterations = 5;
+    //             mutable validIterations = 0;
+
+    //             while (validIterations < optimalIterations) {
+    //                 set betterCandidateFound = false;
+    //                 let threshold = list[candidate];
+
+    //                 // Define the comparison function based on the type
+    //                 let comparison = type == "min" ? (x -> x < threshold) | (x -> x > threshold);
+
+    //                 // Calculate M: the number of elements smaller than the current candidate (for min)
+    //                 let M = CountElements(list, comparison);
+
+    //                 // If there are no more elements smaller/larger, return the candidate
+    //                 if (M == 0) {
+    //                     Message("No more elements to compare, search complete.");
+    //                     ResetAll(inputQubits + [auxQubit]);  // Ensure qubits are reset before returning
+    //                     return candidate;
+    //                 }
+
+    //                 // Calculate the optimal number of Grover iterations
+    //                 let N = Length(list);
+    //                 let optimalIterations = Round((PI() / 4.0) * Sqrt(IntAsDouble(N) / IntAsDouble(M)));
+
+    //                 // Perform Grover iterations for min or max
+    //                 for i in 1..optimalIterations {
+    //                     let groverIteration = (type=="min") ? GroverIterationMin | GroverIterationMax;
+    //                     groverIteration(list[candidate], inputQubits, auxQubit);
+
+    //                     // Measure qubits and convert to an integer index
+    //                     mutable results = [];
+    //                     for qubit in inputQubits {
+    //                         let result = Measure([PauliZ], [qubit]);
+    //                         set results += [result];
+
+    //                         // Reset qubit if it is in the |1⟩ state
+    //                         if (result == One) {
+    //                             X(qubit);
+    //                         }
+    //                     }
+
+    //                     let candidateIndex = ResultArrayAsInt(results);
+
+    //                     // Check if the new candidate is valid and within bounds
+    //                     if (candidateIndex >= 0 and candidateIndex < listSize) {
+    //                         let candidateValue = list[candidateIndex];
+
+    //                         // Update the candidate if a better one is found
+    //                         if (type == "min" and candidateValue < list[candidate]) {
+    //                             OracleLessThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
+    //                             set candidate = candidateIndex;
+    //                             set betterCandidateFound = true;
+    //                         } elif (type == "max" and candidateValue > list[candidate]) {
+    //                             OracleMoreThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
+    //                             set candidate = candidateIndex;
+    //                             set betterCandidateFound = true;
+    //                         }
+    //                         set validIterations += 1;
+
+    //                         // Output intermediate results for debugging
+    //                         Message($"Iteration {validIterations}: Measured index = {candidateIndex}, Value = {candidateValue}");
+    //                     }
+    //                     // Reset all qubits to |0⟩ before returning
+    //                     ResetAll(inputQubits + [auxQubit]);
+
+    //                 }
+
+    //             }
+
+    //             // Reset all qubits to |0⟩ before returning
+    //             ResetAll(inputQubits + [auxQubit]);
+
+    //             // Return the found minimum or maximum index
+    //             return candidate;
+    //         }
+    //     }
+    // }
+    // Dürr-Høyer for finding min or max algorithm
+    operation DurrHoyerAlgorithmProduction(
+    list : Int[],
+    nQubits : Int,
+    type : String,
+    candidate : Int,
+    listSize : Int,
+    iterations : Int
+    ) : Result[] {
+        // Initial candidate (passed as parameter)
+        let threshold = list[candidate];
+
+        use inputQubits = Qubit[nQubits];
+        use auxQubit = Qubit();
+
+        // Prepare the superposition state
+        ApplyToEach(H, inputQubits);
+
+
+        let iteration = (type == "min")
+            ? GroverIterationMin(threshold, _, auxQubit, iterations)
+            | GroverIterationMax(threshold, _, auxQubit, iterations);
+
+        // Apply the iteration
+        iteration(inputQubits);
+        
+        // Measure the qubits
+        let results = MeasureEachZ(inputQubits);
+
+        // Reset qubits
+        ResetAll(inputQubits + [auxQubit]);
+
+        // Convert results to integer index
+
+        // Return the candidate index
+        return results;
+    }
+export DurrHoyerAlgorithmProduction;
 
 }

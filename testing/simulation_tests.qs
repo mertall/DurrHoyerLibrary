@@ -37,7 +37,7 @@ namespace Test {
             // Run the Durr-Hoyer algorithm multiple times (shots)
             for _ in 1..shots {
                 let candidate = DrawRandomInt(0, Length(list) - 1);
-                let foundIndex : Int = DurrHoyerAlgorithm(list, nQubits, testType, candidate, listSize);
+                let foundIndex : Int = DurrHoyerAlgorithmSimulation(list, nQubits, testType, candidate, listSize);
 
                 // Check if the found index matches the expected index
                 if (foundIndex == expectedIndex) {
@@ -51,9 +51,9 @@ namespace Test {
             // Assert that the probability is above 50%
             Fact(probability >= 0.49, $"Probability of finding the {testType} for list {list} is less than 50%. Found: {probability * 100.0}%");
 
-            // Optionally print debugging info
-            Message($"List: {list}");
-            Message($"Probability of finding the {testType} is {probability * 100.0}%");
+            // // Optionally print debugging info
+            // Message($"List: {list}");
+            // Message($"Probability of finding the {testType} is {probability * 100.0}%");
         }
     }
 
@@ -101,8 +101,8 @@ namespace Test {
 }
     @EntryPoint()
     operation RunMinTest() : Unit {
-        //RunDurrHoyerMinimumUnitTestWithShots(1000);
-        //RunDurrHoyerMaximumUnitTestWithShots(1000);
-        // RunDurrHoyerZeroValuesUnitTestWithShots(1000);
+        RunDurrHoyerMinimumUnitTestWithShots(1000);
+        RunDurrHoyerMaximumUnitTestWithShots(1000);
+        RunDurrHoyerZeroValuesUnitTestWithShots(1000);
     }
 }
