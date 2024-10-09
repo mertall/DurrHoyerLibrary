@@ -40,7 +40,7 @@ class QuantumBackendDH():
         MyProgram = qsharp.compile("durrhoyerAlgorithm.DurrHoyerAlgorithmProduction("+inputs+")")
 
 
-        MyTarget = self.workspace.get_targets("rigetti.sim.qvm")
+        MyTarget = self.workspace.get_targets("rigetti.qpu.ankaa-9q-3")
 
         job = MyTarget.submit(MyProgram, "MyPythonJob", shots=1)
         results = job.get_results()

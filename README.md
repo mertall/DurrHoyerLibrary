@@ -1,8 +1,11 @@
 # DurrHoyerLibrary
-## Rigetti Simulator QVM Results
+## Rigetti Ankaa-9Q-3
 ### Success Rate vs Number of shots of Durr Hoyer Algorithm
 ### 100 Trials for each number of Shot(s)
-![Chart Example](assets/Figure_1.png)
+![Chart Example](assets/rigetti_ankaa_9q_3.png)
+
+## Rigetti Simulator QVM Results
+![Chart Example](assets/rigetti_sim_qvm.png)
 
 ## Ionq Aria Quantum Computer Results
 ### No max results because above 7 is more than 4 qubits and the algorithm at this stage in testing was unable to dynamically allocate qubits to max number in list.
