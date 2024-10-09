@@ -1,7 +1,10 @@
 # DurrHoyerLibrary
+## Rigetti Ankaa-9Q-3
+![Chart Example](assets/rigetti_ankaa_9q_3.png)
+
 ## Rigetti Simulator QVM Results
 # Success Rate vs Number of Shot of Algorithm
-![Chart Example](assets/Figure_1.png)
+![Chart Example](assets/rigetti_sim_qvm.png)
 ## Microsoft Quantum Simulator Results
 | List     | Probability (Min) | List     | Probability (Max) |
 |-----------------------|------------------:|---------------------|------------------:|
