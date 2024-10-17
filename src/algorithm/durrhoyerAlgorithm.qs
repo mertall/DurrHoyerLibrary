@@ -65,76 +65,70 @@ namespace durrhoyerAlgorithm {
         // Determine the number of control qubits
         let n = Length(clauseQubits);
 
-        // Convert the clause integer to an n-bit binary string and reverse it
-        // to match qubit ordering (least significant bit first)
+        // Convert the clause integer to an n-bit binary representation
         let clauseBinary = ConvertToBinary(clause, n);
 
-        // Apply X gates to qubits where the clause binary has '0'
-        for index in 0 .. n - 1 {
-            if (clauseBinary[index] == Zero) {
-                X(clauseQubits[index]);
+        // Begin the within-apply block for phase kickback
+        within {
+            // Prepare the output qubit in the state (|0⟩ - |1⟩)/√2 for phase kickback
+            X(output);
+            H(output);
+
+            // Apply X gates to clause qubits where the clause binary has '0'
+            for index in 0 .. n - 1 {
+                if (clauseBinary[index] == Zero) {
+                    X(clauseQubits[index]);
+                }
             }
+        } apply {
+            // Apply a multi-controlled X gate, which will induce a phase flip due to the prepared output qubit
+            Controlled X(clauseQubits, output);
         }
 
-        // Apply a multi-controlled Z gate (phase flip)
-        // Since Q# does not have a direct MCZ gate, we can implement it using
-        // a multi-controlled X gate with an ancilla qubit or by using the
-        // native Toffoli (CCNOT) gates for up to 2 controls.
-        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
-
-        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
-        // MCX gate with a control state. You might need to use ancilla qubits for more
-        // than two controls. Here, we'll assume n <= 3 for simplicity.
-
-        Controlled X(clauseQubits[0..n-1], output);
-        
-
-        // Revert X gates to restore the original state of clause qubits
+        // Revert the X gates on the clause qubits to restore their original state
         for index in 0 .. n - 1 {
             if (clauseBinary[index] == Zero) {
                 X(clauseQubits[index]);
             }
         }
     }
+
 
 
     /// Oracle that marks elements less than the threshold using a multi-bit comparator
-/// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
+    /// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
     operation OracleMoreThan(clause : Int, clauseQubits : Qubit[], output : Qubit) : Unit is Adj + Ctl {
-                // Determine the number of control qubits
+        // Determine the number of control qubits
         let n = Length(clauseQubits);
 
-        // Convert the clause integer to an n-bit binary string and reverse it
-        // to match qubit ordering (least significant bit first)
+        // Convert the clause integer to an n-bit binary representation
         let clauseBinary = ConvertToBinary(clause, n);
 
-        // Apply X gates to qubits where the clause binary has '0'
-        for index in 0 .. n - 1 {
-            if (clauseBinary[index] == One) {
-                X(clauseQubits[index]);
+        // Begin the within-apply block for phase kickback
+        within {
+            // Prepare the output qubit in the state (|0⟩ - |1⟩)/√2 for phase kickback
+            X(output);
+            H(output);
+
+            // Apply X gates to clause qubits where the clause binary has '0'
+            for index in 0 .. n - 1 {
+                if (clauseBinary[index] == One) {
+                    X(clauseQubits[index]);
+                }
             }
+        } apply {
+            // Apply a multi-controlled X gate, which will induce a phase flip due to the prepared output qubit
+            Controlled X(clauseQubits, output);
         }
 
-        // Apply a multi-controlled Z gate (phase flip)
-        // Since Q# does not have a direct MCZ gate, we can implement it using
-        // a multi-controlled X gate with an ancilla qubit or by using the
-        // native Toffoli (CCNOT) gates for up to 2 controls.
-        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
-
-        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
-        // MCX gate with a control state. You might need to use ancilla qubits for more
-        // than two controls. Here, we'll assume n <= 3 for simplicity.
-
-        Controlled X(clauseQubits[0..n-1], output);
-        
-
-        // Revert X gates to restore the original state of clause qubits
+        // Revert the X gates on the clause qubits to restore their original state
         for index in 0 .. n - 1 {
             if (clauseBinary[index] == One) {
                 X(clauseQubits[index]);
             }
         }
     }
+
     operation PrepareUniform(inputQubits : Qubit[]) : Unit is Adj + Ctl {
         for q in inputQubits {
             H(q);
