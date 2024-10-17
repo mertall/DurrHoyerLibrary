@@ -65,84 +65,98 @@ namespace durrhoyerAlgorithm {
         // Determine the number of control qubits
         let n = Length(clauseQubits);
 
-        // Convert the clause integer to an n-bit binary string and reverse it
-        // to match qubit ordering (least significant bit first)
+        // Convert the clause integer to an n-bit binary representation
         let clauseBinary = ConvertToBinary(clause, n);
 
-        // Apply X gates to qubits where the clause binary has '0'
-        for index in 0 .. n - 1 {
-            if (clauseBinary[index] == Zero) {
-                X(clauseQubits[index]);
+        // Begin the within-apply block for phase kickback
+        within {
+            // Prepare the output qubit in the state (|0⟩ - |1⟩)/√2 for phase kickback
+            X(output);
+            H(output);
+
+            // Apply X gates to clause qubits where the clause binary has '0'
+            for index in 0 .. n - 1 {
+                if (clauseBinary[index] == Zero) {
+                    X(clauseQubits[index]);
+                }
             }
+        } apply {
+            // Apply a multi-controlled X gate, which will induce a phase flip due to the prepared output qubit
+            Controlled X(clauseQubits, output);
         }
 
-        // Apply a multi-controlled Z gate (phase flip)
-        // Since Q# does not have a direct MCZ gate, we can implement it using
-        // a multi-controlled X gate with an ancilla qubit or by using the
-        // native Toffoli (CCNOT) gates for up to 2 controls.
-        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
-
-        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
-        // MCX gate with a control state. You might need to use ancilla qubits for more
-        // than two controls. Here, we'll assume n <= 3 for simplicity.
-
-        Controlled X(clauseQubits[0..n-1], output);
-        
-
-        // Revert X gates to restore the original state of clause qubits
+        // Revert the X gates on the clause qubits to restore their original state
         for index in 0 .. n - 1 {
             if (clauseBinary[index] == Zero) {
                 X(clauseQubits[index]);
             }
         }
     }
+
 
 
     /// Oracle that marks elements less than the threshold using a multi-bit comparator
-/// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
+    /// Excluded Indices is a list of 0 and 1s classicaly, converted to qubits of 0 and 1, where N is length of inputQubits
     operation OracleMoreThan(clause : Int, clauseQubits : Qubit[], output : Qubit) : Unit is Adj + Ctl {
-                // Determine the number of control qubits
+        // Determine the number of control qubits
         let n = Length(clauseQubits);
 
-        // Convert the clause integer to an n-bit binary string and reverse it
-        // to match qubit ordering (least significant bit first)
+        // Convert the clause integer to an n-bit binary representation
         let clauseBinary = ConvertToBinary(clause, n);
 
-        // Apply X gates to qubits where the clause binary has '0'
-        for index in 0 .. n - 1 {
-            if (clauseBinary[index] == One) {
-                X(clauseQubits[index]);
+        // Begin the within-apply block for phase kickback
+        within {
+            // Prepare the output qubit in the state (|0⟩ - |1⟩)/√2 for phase kickback
+            X(output);
+            H(output);
+
+            // Apply X gates to clause qubits where the clause binary has '0'
+            for index in 0 .. n - 1 {
+                if (clauseBinary[index] == One) {
+                    X(clauseQubits[index]);
+                }
             }
+        } apply {
+            // Apply a multi-controlled X gate, which will induce a phase flip due to the prepared output qubit
+            Controlled X(clauseQubits, output);
         }
 
-        // Apply a multi-controlled Z gate (phase flip)
-        // Since Q# does not have a direct MCZ gate, we can implement it using
-        // a multi-controlled X gate with an ancilla qubit or by using the
-        // native Toffoli (CCNOT) gates for up to 2 controls.
-        // For simplicity, we'll implement a phase flip using the MultiControlledX operation.
-
-        // Note: As of my knowledge cutoff in September 2021, Q# does not have a built-in
-        // MCX gate with a control state. You might need to use ancilla qubits for more
-        // than two controls. Here, we'll assume n <= 3 for simplicity.
-
-        Controlled X(clauseQubits[0..n-1], output);
-        
-
-        // Revert X gates to restore the original state of clause qubits
+        // Revert the X gates on the clause qubits to restore their original state
         for index in 0 .. n - 1 {
             if (clauseBinary[index] == One) {
                 X(clauseQubits[index]);
             }
         }
     }
-    // Diffusion operator (Grover's diffusion)
-    operation DiffusionOperator(qubits : Qubit[]) : Unit {
-        ApplyToEach(H, qubits);
-        ApplyToEach(X, qubits);
-        Controlled Z(qubits[0..Length(qubits) - 2], qubits[Length(qubits) - 1]);
-        ApplyToEach(X, qubits);
-        ApplyToEach(H, qubits);
+
+    operation PrepareUniform(inputQubits : Qubit[]) : Unit is Adj + Ctl {
+        for q in inputQubits {
+            H(q);
+        }
     }
+    /// # Summary
+    /// Reflects about the all-ones state.
+    operation ReflectAboutAllOnes(inputQubits : Qubit[]) : Unit {
+        Controlled Z(Most(inputQubits), Tail(inputQubits));
+    }
+    /// # Summary
+    /// Implements the Grover diffusion operator (inversion about the mean)
+    operation DiffusionOperator(inputQubits : Qubit[]) : Unit {
+        within {
+            // Transform the uniform superposition to all-zero.
+            Adjoint PrepareUniform(inputQubits);
+            // Transform the all-zero state to all-ones
+            for q in inputQubits {
+                X(q);
+            }
+        } apply {
+            // Now that we've transformed the uniform superposition to the
+            // all-ones state, reflect about the all-ones state, then let the
+            // within/apply block transform us back.
+            ReflectAboutAllOnes(inputQubits);
+        }
+    }
+
 
     // Grover iteration with the oracle and diffusion operator for min
     operation GroverIterationMin(threshold : Int, inputQubits : Qubit[], auxQubit : Qubit, iterations: Int) : Unit {
@@ -159,94 +173,7 @@ namespace durrhoyerAlgorithm {
             DiffusionOperator(inputQubits);
         }
     }
-    // operation DurrHoyerAlgorithmSimulation(list : Int[], nQubits : Int, type : String, candidate: Int, listSize : Int) : Int {
-    //     mutable candidate = candidate;  // Random initial candidate
-
-    //     use inputQubits = Qubit[nQubits] {
-    //         use auxQubit = Qubit() {
-    //             // Create a superposition of all states
-    //             ApplyToEach(H, inputQubits);
-
-    //             // Continue Grover search until no better candidate is found
-    //             mutable betterCandidateFound = true;
-    //             mutable iterationCount = 1; // Track the iteration count manually
-    //             mutable optimalIterations = 5;
-    //             mutable validIterations = 0;
-
-    //             while (validIterations < optimalIterations) {
-    //                 set betterCandidateFound = false;
-    //                 let threshold = list[candidate];
-
-    //                 // Define the comparison function based on the type
-    //                 let comparison = type == "min" ? (x -> x < threshold) | (x -> x > threshold);
-
-    //                 // Calculate M: the number of elements smaller than the current candidate (for min)
-    //                 let M = CountElements(list, comparison);
-
-    //                 // If there are no more elements smaller/larger, return the candidate
-    //                 if (M == 0) {
-    //                     Message("No more elements to compare, search complete.");
-    //                     ResetAll(inputQubits + [auxQubit]);  // Ensure qubits are reset before returning
-    //                     return candidate;
-    //                 }
-
-    //                 // Calculate the optimal number of Grover iterations
-    //                 let N = Length(list);
-    //                 let optimalIterations = Round((PI() / 4.0) * Sqrt(IntAsDouble(N) / IntAsDouble(M)));
-
-    //                 // Perform Grover iterations for min or max
-    //                 for i in 1..optimalIterations {
-    //                     let groverIteration = (type=="min") ? GroverIterationMin | GroverIterationMax;
-    //                     groverIteration(list[candidate], inputQubits, auxQubit);
-
-    //                     // Measure qubits and convert to an integer index
-    //                     mutable results = [];
-    //                     for qubit in inputQubits {
-    //                         let result = Measure([PauliZ], [qubit]);
-    //                         set results += [result];
-
-    //                         // Reset qubit if it is in the |1⟩ state
-    //                         if (result == One) {
-    //                             X(qubit);
-    //                         }
-    //                     }
-
-    //                     let candidateIndex = ResultArrayAsInt(results);
-
-    //                     // Check if the new candidate is valid and within bounds
-    //                     if (candidateIndex >= 0 and candidateIndex < listSize) {
-    //                         let candidateValue = list[candidateIndex];
-
-    //                         // Update the candidate if a better one is found
-    //                         if (type == "min" and candidateValue < list[candidate]) {
-    //                             OracleLessThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
-    //                             set candidate = candidateIndex;
-    //                             set betterCandidateFound = true;
-    //                         } elif (type == "max" and candidateValue > list[candidate]) {
-    //                             OracleMoreThan(list[candidate], inputQubits, auxQubit); // Mark the last candidate
-    //                             set candidate = candidateIndex;
-    //                             set betterCandidateFound = true;
-    //                         }
-    //                         set validIterations += 1;
-
-    //                         // Output intermediate results for debugging
-    //                         Message($"Iteration {validIterations}: Measured index = {candidateIndex}, Value = {candidateValue}");
-    //                     }
-    //                     // Reset all qubits to |0⟩ before returning
-    //                     ResetAll(inputQubits + [auxQubit]);
-
-    //                 }
-
-    //             }
-
-    //             // Reset all qubits to |0⟩ before returning
-    //             ResetAll(inputQubits + [auxQubit]);
-
-    //             // Return the found minimum or maximum index
-    //             return candidate;
-    //         }
-    //     }
-    // }
+    
     // Dürr-Høyer for finding min or max algorithm
     operation DurrHoyerAlgorithmProduction(
     list : Int[],
